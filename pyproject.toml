@@ -15,7 +15,7 @@ requires-python = ">=3.8"
 
 dependencies = [
     "torch",
-    "libero @ git+https://github.com/huggingface/lerobot-libero.git#egg=libero"
+    # "libero"
 ]
 
 

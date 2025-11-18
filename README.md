@@ -1,14 +1,12 @@
 # A Gymnasium Wrapper for LIBERO
-This project provides a wrapper to make the [LIBERO](https://github.com/huggingface/lerobot-libero) robotics benchmark compatible with the modern [Gymnasium](https://gymnasium.farama.org/) API.
+This project provides a wrapper to make the LIBERO robotics benchmark compatible with the old Gym API.
 
-This wrapper allows you to create, reset, and step through LIBERO environments using the standard gymnasium.make() interface.
+This wrapper allows you to create, reset, and step through LIBERO environments using the standard gym.make() interface.
 
 ## Dependencies
 Before using this wrapper, ensure you have the required dependencies. The primary dependencies are:
 
-- `gymnasium>=0.29.1`
-
-- `libero @ git+https://github.com/huggingface/lerobot-libero.git#egg=libero` (This specific fork upgrades the base dependency from gym to gymnasium)
+- `libero`
 
 - `torch`
 
@@ -23,7 +21,7 @@ This example shows how to create an environment, reset it to a specific task, an
 
 ```Python
 
-import gymnasium as gym
+import gym
 import liberogymwrapper  # 1. Import wrapper to register environments
 import numpy as np
 from tqdm import tqdm
@@ -45,7 +43,7 @@ for i in tqdm(range(10)):
 
     # 3. Reset the environment to get the first observation
     # obs is a dictionary containing robot state and camera images
-    obs, info = env.reset()
+    obs = env.reset()
 
     # 4. Access the natural language task description (prompt)
     prompt = env.task_description
@@ -72,7 +70,7 @@ For demonstration, env.action_space.sample() is used to generate random actions.
 
 ```Python
 
-import gymnasium as gym
+import gym
 import liberogymwrapper
 import numpy as np
 import time
@@ -88,7 +86,7 @@ env = gym.make(
 )
 
 # 2. Reset the environment
-obs, info = env.reset()
+obs = env.reset()
 print(f"Starting task: {env.task_description}")
 
 # --- 3. (Optional) Stabilize the Environment ---
@@ -98,7 +96,7 @@ print(f"Starting task: {env.task_description}")
 print("Stabilizing environment...")
 dummy_action = np.array([0, 0, 0, 0, 0, 0, -1])  # [dx, dy, dz, droll, dpitch, dyaw, gripper]
 for _ in range(20):
-    obs, _, _, _, _ = env.step(dummy_action)
+    obs, _, _, _ = env.step(dummy_action)
 # --- End Stabilization ---
 
 
@@ -166,6 +164,36 @@ When calling gym.make(), you must provide the following keyword arguments:
 - `seed (int, optional)`: A seed for the environment's random number generators.
 
 - `render_mode (str, optional)`: Set to "human" to open a window for live rendering.
+
+## Remark
+
+Some users may face the error:
+
+```
+UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, do those steps only if you trust the source of the checkpoint. 
+        (1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+        (2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+        WeightsUnpickler error: Unsupported global: GLOBAL numpy.core.multiarray._reconstruct was not an allowed global by default. Please use `torch.serialization.add_safe_globals([numpy.core.multiarray._reconstruct])` or the `torch.serialization.safe_globals([numpy.core.multiarray._reconstruct])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+```
+
+You can find the code
+```
+File /opt/miniforge3/envs/pi0_torch/lib/python3.12/site-packages/libero/libero/benchmark/__init__.py:164, in Benchmark.get_task_init_states(self, i)
+    158 def get_task_init_states(self, i):
+    159     init_states_path = os.path.join(
+    160         get_libero_path("init_states"),
+    161         self.tasks[i].problem_folder,
+    162         self.tasks[i].init_states_file,
+    163     )
+--> 164     init_states = torch.load(init_states_path)
+    165     return init_states
+
+```
+
+and change the `init_states = torch.load(init_states_path)` to `init_states = torch.load(init_states_path, weights_only=False)`
+
 
 ## Thanks
 

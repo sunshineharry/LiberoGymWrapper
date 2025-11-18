@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 from typing import Optional
 
-import gymnasium
+import gym
 import numpy as np
 import torch
-from gymnasium import spaces
+from gym import spaces
 from robosuite.utils.camera_utils import get_camera_intrinsic_matrix, get_real_depth_map
 
 import libero
@@ -13,7 +13,7 @@ from libero.libero import benchmark
 from libero.libero.envs import OffScreenRenderEnv
 
 
-class LiberoEnv(gymnasium.Env):
+class LiberoEnv(gym.Env):
     TASK_SUITE_NAME = (
         ""  # can be "libero_goal", "libero_spatial", "libero_object", "libero_10", "libero_90"
     )
@@ -71,9 +71,7 @@ class LiberoEnv(gymnasium.Env):
         }
         self.env = OffScreenRenderEnv(**env_args)
         self.env.seed(seed)
-
-        # 将 task_description 设为私有属性，避免直接访问警告
-        self._task_description = self.env.language_instruction
+        self.task_description = self.env.language_instruction
 
         if require_point_cloud:
             import open3d as o3d
@@ -99,8 +97,7 @@ class LiberoEnv(gymnasium.Env):
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(7,), dtype=np.float32)
         self.observation_space = spaces.Dict()
-        # 临时调用 reset 来构建 observation_space
-        example_obs, _ = self.reset()
+        example_obs = self.reset()
         for key, value in example_obs.items():
             if "image" in key:
                 self.observation_space[key] = spaces.Box(
@@ -122,11 +119,6 @@ class LiberoEnv(gymnasium.Env):
     @property
     def num_init_states(self):
         return len(self._init_states)
-
-    @property
-    def task_description(self):
-        """提供向后兼容的 task_description 访问"""
-        return self._task_description
 
     def check_success(self):
         return self.env.env._check_success()
@@ -234,60 +226,18 @@ class LiberoEnv(gymnasium.Env):
         self.env.env.close()
         del self.env.env
 
-    def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
-        """
-        符合 Gymnasium API 的 reset 方法
-        
-        Args:
-            seed: 随机种子
-            options: 可以包含 'init_state_id' 来指定初始状态
-        
-        Returns:
-            obs: 观察值
-            info: 信息字典
-        """
-        # 处理 seed
-        if seed is not None:
-            self.seed(seed)
-        
-        # 处理 options
-        init_state_id = None
-        if options is not None and 'init_state_id' in options:
-            init_state_id = options['init_state_id']
-        
+    def reset(self, init_state_id: Optional[int] = None):
         if init_state_id is None:
             init_state_id = np.random.randint(self.num_init_states)
-        
         self.env.reset()
         obs = self.set_init_state(self._init_states[init_state_id])
         self._episode_steps = 0
-        
-        # 返回 info 字典
-        info = {
-            "task_description": self._task_description,
-            "init_state_id": init_state_id
-        }
-        
-        return obs, info
+        return obs
 
     def step(self, action):
-        """
-        符合 Gymnasium API 的 step 方法
-        
-        Returns:
-            obs: 观察值
-            reward: 奖励
-            terminated: 是否达到终止状态（任务完成）
-            truncated: 是否因其他原因截断（如超时）
-            info: 信息字典
-        """
         _, reward, done, info = self.env.step(action)
         obs = self.get_observations()
-        info["task_description"] = self._task_description
+        info["task_description"] = self.task_description
         self._episode_steps += 1
-        
-        # 区分 terminated 和 truncated
-        terminated = done  # 任务完成
-        truncated = self._episode_steps >= self._max_episode_steps  # 超时
-        
-        return obs, reward, terminated, truncated, info
+        done = done or self._episode_steps >= self._max_episode_steps
+        return obs, reward, done, info

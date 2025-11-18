@@ -1,3 +1,5 @@
+LICENSE
+README.md
 pyproject.toml
 liberogymwrapper/__init__.py
 liberogymwrapper/libero_dataset.py
