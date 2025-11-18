@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liberogymwrapper"
+version = "0.1.1"
+
+authors = [
+  { name="JIANG Hankun", email="hankunjiang@outlook.com" },
+]
+description = "A Gymnasium Wrapper for libero"
+readme = "README.md" 
+requires-python = ">=3.8" 
+
+dependencies = [
+    "torch",
+    "libero @ git+https://github.com/huggingface/lerobot-libero.git#egg=libero"
+]
+
+
+[tool.setuptools]
+packages = { find = {} }
