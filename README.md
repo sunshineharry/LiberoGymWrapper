@@ -167,6 +167,36 @@ When calling gym.make(), you must provide the following keyword arguments:
 
 - `render_mode (str, optional)`: Set to "human" to open a window for live rendering.
 
+## Remark
+
+Some users may face the error:
+
+```
+UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, do those steps only if you trust the source of the checkpoint. 
+        (1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+        (2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+        WeightsUnpickler error: Unsupported global: GLOBAL numpy.core.multiarray._reconstruct was not an allowed global by default. Please use `torch.serialization.add_safe_globals([numpy.core.multiarray._reconstruct])` or the `torch.serialization.safe_globals([numpy.core.multiarray._reconstruct])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+```
+
+You can find the code
+```
+File /opt/miniforge3/envs/pi0_torch/lib/python3.12/site-packages/libero/libero/benchmark/__init__.py:164, in Benchmark.get_task_init_states(self, i)
+    158 def get_task_init_states(self, i):
+    159     init_states_path = os.path.join(
+    160         get_libero_path("init_states"),
+    161         self.tasks[i].problem_folder,
+    162         self.tasks[i].init_states_file,
+    163     )
+--> 164     init_states = torch.load(init_states_path)
+    165     return init_states
+
+```
+
+and change the `init_states = torch.load(init_states_path)` to `init_states = torch.load(init_states_path, weights_only=False)`
+
+
 ## Thanks
 
 This project is updated from 
