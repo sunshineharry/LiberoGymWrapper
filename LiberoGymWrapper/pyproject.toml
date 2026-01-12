@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liberogymwrapper"
+version = "0.1.1"
+
+authors = [
+  { name="JIANG Hankun", email="hankunjiang@outlook.com" },
+]
+description = "A Gymnasium Wrapper for libero"
+readme = "README.md" 
+requires-python = "==3.12.12" 
+
+dependencies = [
+    "torch==2.9.1",
+    "libero @ git+https://github.com/sunshineharry/lerobot-libero.git#egg=libero",
+    "open3d",
+    "numba",
+    "fastapi",
+    "flask",
+    "httpx",
+    "requests",
+    "tqdm",
+    "matplotlib",
+    "pytorch3d==0.7.9"
+]
+
+
+[tool.setuptools]
+packages = { find = {} }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+
+[tool.uv.sources]
+pytorch3d = { url = "https://github.com/MiroPsota/torch_packages_builder/releases/download/pytorch3d-0.7.9/pytorch3d-0.7.9%2Bpt2.9.1cu128-cp312-cp312-linux_x86_64.whl" }
+torch = { index = "pytorch-cu128" }
