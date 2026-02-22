@@ -24,3 +24,6 @@ dependencies = [
 
 [tool.setuptools]
 packages = { find = {} }
+
+[tool.setuptools.package-data]
+liberogymwrapperclient = ["py.typed"]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "liberogymwrapper"
-version = "0.1.1"
+version = "0.1.6"
 
 authors = [
   { name="JIANG Hankun", email="hankunjiang@outlook.com" },
@@ -24,7 +24,8 @@ dependencies = [
     "requests",
     "tqdm",
     "matplotlib",
-    "pytorch3d==0.7.9"
+    "pytorch3d==0.7.9",
+    "opencv-python"
 ]
 
 
