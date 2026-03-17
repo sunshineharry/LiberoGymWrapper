@@ -6,7 +6,7 @@ import gymnasium
 import numpy as np
 import torch
 from gymnasium import spaces
-from robosuite.utils.camera_utils import get_camera_intrinsic_matrix, get_real_depth_map
+from robosuite.utils.camera_utils import get_camera_intrinsic_matrix, get_real_depth_map, get_camera_extrinsic_matrix
 
 import libero
 from libero.libero import benchmark
@@ -21,7 +21,8 @@ class LiberoEnv(gymnasium.Env):
     def __init__(
         self,
         task_id: int = 0,  # from 0 to 9
-        image_size: int = 224,
+        image_size_height: int = 224,
+        image_size_width: int = 224,
         require_depth: bool = True,
         require_point_cloud: bool = False,
         num_points: int = 8192,
@@ -35,8 +36,9 @@ class LiberoEnv(gymnasium.Env):
         self._require_point_cloud = require_point_cloud
         self._require_depth = require_depth
         assert not require_point_cloud or require_depth, "Require depth if require point cloud!"
+        self._image_size_height = image_size_height
+        self._image_size_width = image_size_width
 
-        self._image_size = image_size
         self._camera_names = camera_names
         self._num_points = num_points
 
@@ -64,8 +66,8 @@ class LiberoEnv(gymnasium.Env):
 
         env_args = {
             "bddl_file_name": task_bddl_file,
-            "camera_heights": image_size,
-            "camera_widths": image_size,
+            "camera_heights": image_size_height,
+            "camera_widths": image_size_width,
             "camera_depths": require_depth,
             "camera_names": camera_names,
         }
@@ -88,8 +90,8 @@ class LiberoEnv(gymnasium.Env):
 
             self._cam_intrinsics = dict()
             for camera_name in camera_names:
-                cammat = get_camera_intrinsic_matrix(self.sim, camera_name, image_size, image_size)
-                self._cam_intrinsics[camera_name] = cammat2o3d(cammat, image_size, image_size)
+                cammat = get_camera_intrinsic_matrix(self.sim, camera_name, image_size_height, image_size_width)
+                self._cam_intrinsics[camera_name] = cammat2o3d(cammat, image_size_width, image_size_height)
 
             self._pcd_bb = o3d.geometry.AxisAlignedBoundingBox(
                 min_bound=(-1.0, -1.0, 0.0), max_bound=(1.0, 1.0, 1.6)
@@ -181,10 +183,16 @@ class LiberoEnv(gymnasium.Env):
                 2, 0, 1
             )
 
+        for camera_name in self._camera_names:
+            raw_obs[f"{camera_name}_intrinsic_matrix"] = get_camera_intrinsic_matrix(self.sim, camera_name, self._image_size_height, self._image_size_width)
+            raw_obs[f"{camera_name}_extrinsic_matrix"] = get_camera_extrinsic_matrix(self.sim, camera_name)
+
         if self._require_depth:
             for camera_name in self._camera_names:
                 # convert to metric depth, flip to the correct orientation and reshape to (H, W)
                 depth = raw_obs[f"{camera_name}_depth"]
+                depth = np.nan_to_num(depth, nan=0.0, posinf=1.0, neginf=0.0)
+                depth = np.clip(depth, 0.0, 1.0)
                 metric_depth = get_real_depth_map(self.sim, depth)
                 metric_depth = np.clip(metric_depth, 0.0, 2.0)[::-1][:, :, 0].astype(np.float32)
                 raw_obs[f"{camera_name}_depth"] = metric_depth
