@@ -1,0 +1,53 @@
+### OS
+.DS_Store
+Thumbs.db
+
+### Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.nox/
+.tox/
+.cache/
+
+### Virtual environments (uv-managed)
+.venv/
+.env
+.env.*
+.uv/
+.uv-cache/
+.python-version
+.pyc
+
+### Build and binary artifacts
+build/
+dist/
+wheels/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+pip-log.txt
+pip-delete-this-directory.txt
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+
+### Logs and reports
+*.log
+coverage.xml
+.coverage*
+htmlcov/
+
+### Jupyter
+.ipynb_checkpoints/
+
+### IDE/editor
+.vscode/
+.idea/
+
+### Dependencies handled by uv
+requirements.txt
